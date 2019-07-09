@@ -347,10 +347,38 @@ nbt_tag_t* nbt_parse(nbt_reader_t reader, int parse_flags) {
     stream.next_in = Z_NULL;
 
     if (gzip_format) {
-      // TODO: Parse gzip header.
+      uint8_t header[10];
+      reader.read(reader.userdata, header, 10);
+      int fhcrc = header[3] & 2;
+      int fextra = header[3] & 4;
+      int fname = header[3] & 8;
+      int fcomment = header[3] & 16;
+
+      (void)fextra; // I don't think many files use this.
+
+      if (fname) {
+        uint8_t byte = 0;
+        do {
+          reader.read(reader.userdata, &byte, 1);
+        } while (byte != 0);
+      }
+
+      if (fcomment) {
+        uint8_t byte = 0;
+        do {
+          reader.read(reader.userdata, &byte, 1);
+        } while (byte != 0);
+      }
+
+      uint16_t crc;
+      if (fhcrc) {
+        reader.read(reader.userdata, (uint8_t*)&crc, 2);
+      }
+
+      (void)crc;
     }
 
-    int ret = inflateInit(&stream);
+    int ret = inflateInit2(&stream, gzip_format ? -Z_DEFAULT_WINDOW_BITS : Z_DEFAULT_WINDOW_BITS);
     if (ret != Z_OK) {
       NBT_FREE(buffer);
       return NULL;
@@ -377,6 +405,8 @@ nbt_tag_t* nbt_parse(nbt_reader_t reader, int parse_flags) {
 
       
     } while (ret != Z_STREAM_END);
+
+    inflateEnd(&stream);
     
   } else {
 

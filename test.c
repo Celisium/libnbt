@@ -98,12 +98,12 @@ static void print_nbt_tree(nbt_tag_t* tag, int indentation) {
 
 int main() {
 
-  FILE* file = fopen("bigtest-raw.nbt", "rb");
+  FILE* file = fopen("bigtest-gzip.nbt", "rb");
 
   reader.read = reader_read;
   reader.userdata = file;
 
-  nbt_tag_t* tag = nbt_parse(reader, NBT_PARSE_FLAG_FORCE_RAW);
+  nbt_tag_t* tag = nbt_parse(reader, NBT_PARSE_FLAG_FORCE_GZIP);
 
   print_nbt_tree(tag, 0);
 

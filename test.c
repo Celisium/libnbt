@@ -98,6 +98,7 @@ static void print_nbt_tree(nbt_tag_t* tag, int indentation) {
 
 int main() {
 
+  // Example 1: Loading an NBT file from disk.
   FILE* file = fopen("bigtest-gzip.nbt", "rb");
 
   reader.read = reader_read;
@@ -105,7 +106,28 @@ int main() {
 
   nbt_tag_t* tag = nbt_parse(reader, NBT_PARSE_FLAG_FORCE_GZIP);
 
-  print_nbt_tree(tag, 0);
+  printf("Example 1:\n");
+  print_nbt_tree(tag, 2);
+
+  // Example 2: Creating a new NBT tree from scratch.
+  nbt_tag_t* tag_level = nbt_new_tag_compound();
+  nbt_set_tag_name(tag_level, "Level", strlen("Level"));
+
+  nbt_tag_t* tag_longtest = nbt_new_tag_long(9223372036854775807);
+  nbt_set_tag_name(tag_longtest, "longTest", strlen("longTest"));
+
+  nbt_tag_t* tag_shorttest = nbt_new_tag_short(32767);
+  nbt_set_tag_name(tag_shorttest, "shortTest", strlen("shortTest"));
+
+  nbt_tag_t* tag_stringtest = nbt_new_tag_string("HELLO WORLD THIS IS A TEST STRING ÅÄÖ!", strlen("HELLO WORLD THIS IS A TEST STRING ÅÄÖ!"));
+  nbt_set_tag_name(tag_stringtest, "stringTest", strlen("stringTest"));
+
+  nbt_tag_compound_append(tag_level, tag_longtest);
+  nbt_tag_compound_append(tag_level, tag_shorttest);
+  nbt_tag_compound_append(tag_level, tag_stringtest);
+
+  printf("Example 2:\n");
+  print_nbt_tree(tag_level, 2);
 
   return 0; 
 }

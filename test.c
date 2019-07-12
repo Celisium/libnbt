@@ -2,10 +2,12 @@
 #define NBT_IMPLEMENTATION
 #include "nbt.h"
 
-nbt_reader_t reader;
-
 static size_t reader_read(void* userdata, uint8_t* data, size_t size) {
   return fread(data, 1, size, userdata);
+}
+
+static size_t writer_write(void* userdata, uint8_t* data, size_t size) {
+  return fwrite(data, 1, size, userdata);
 }
 
 static void print_nbt_tree(nbt_tag_t* tag, int indentation) {
@@ -96,20 +98,48 @@ static void print_nbt_tree(nbt_tag_t* tag, int indentation) {
   printf("\n");
 }
 
-int main() {
+nbt_tag_t* read_nbt_file(const char* name, int flags) {
 
-  // Example 1: Loading an NBT file from disk.
-  FILE* file = fopen("bigtest-gzip.nbt", "rb");
+  FILE* file = fopen(name, "rb");
+
+  nbt_reader_t reader;
 
   reader.read = reader_read;
   reader.userdata = file;
 
-  nbt_tag_t* tag = nbt_parse(reader, NBT_PARSE_FLAG_FORCE_GZIP);
+  nbt_tag_t* tag = nbt_parse(reader, flags);
 
-  printf("Example 1:\n");
+  fclose(file);
+
+  return tag;
+}
+
+void write_nbt_file(const char* name, nbt_tag_t* tag, int flags) {
+
+  FILE* file = fopen(name, "wb");
+
+  nbt_writer_t writer;
+
+  writer.write = writer_write;
+  writer.userdata = file;
+
+  nbt_write(writer, tag, flags);
+
+  fclose(file);
+}
+
+int main() {
+
+  // Example 1: Loading an NBT file from disk.
+  printf("Reading Example 1:\n");
+
+  nbt_tag_t* tag = read_nbt_file("bigtest_gzip.nbt", NBT_PARSE_FLAG_USE_GZIP);
+
   print_nbt_tree(tag, 2);
 
   // Example 2: Creating a new NBT tree from scratch.
+  printf("Reading Example 2:\n");
+
   nbt_tag_t* tag_level = nbt_new_tag_compound();
   nbt_set_tag_name(tag_level, "Level", strlen("Level"));
 
@@ -126,8 +156,15 @@ int main() {
   nbt_tag_compound_append(tag_level, tag_shorttest);
   nbt_tag_compound_append(tag_level, tag_stringtest);
 
-  printf("Example 2:\n");
   print_nbt_tree(tag_level, 2);
+
+  printf("Writing Example 1:\n");
+
+  write_nbt_file("write_test_raw.nbt", tag_level, NBT_WRITE_FLAG_USE_RAW);
+
+  nbt_tag_t* read_test = read_nbt_file("write_test_raw.nbt", NBT_PARSE_FLAG_USE_RAW);
+
+  print_nbt_tree(read_test, 2);
 
   return 0; 
 }

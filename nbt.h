@@ -120,13 +120,25 @@ typedef struct {
   void* userdata;
 } nbt_reader_t;
 
+typedef struct {
+  size_t (*write)(void* userdata, uint8_t* data, size_t size);
+  void* userdata;
+} nbt_writer_t;
+
 typedef enum {
-  NBT_PARSE_FLAG_FORCE_GZIP = 1,
-  NBT_PARSE_FLAG_FORCE_ZLIB = 2,
-  NBT_PARSE_FLAG_FORCE_RAW = 3,
+  NBT_PARSE_FLAG_USE_GZIP = 1,
+  NBT_PARSE_FLAG_USE_ZLIB = 2,
+  NBT_PARSE_FLAG_USE_RAW = 3,
 } nbt_parse_flags_t;
 
+typedef enum {
+  NBT_WRITE_FLAG_USE_GZIP = 1,
+  NBT_WRITE_FLAG_USE_ZLIB = 2,
+  NBT_WRITE_FLAG_USE_RAW = 3
+} nbt_write_flags_t;
+
 nbt_tag_t* nbt_parse(nbt_reader_t reader, int parse_flags);
+void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags);
 
 nbt_tag_t* nbt_new_tag_byte(int8_t value);
 nbt_tag_t* nbt_new_tag_short(int16_t value);
@@ -155,15 +167,15 @@ void nbt_free_tag(nbt_tag_t* tag);
 typedef struct {
   uint8_t* buffer;
   size_t buffer_offset;
-} nbt__stream_t;
+} nbt__read_stream_t;
 
-static uint8_t nbt__get_byte(nbt__stream_t* stream) {
+static uint8_t nbt__get_byte(nbt__read_stream_t* stream) {
 
   return stream->buffer[stream->buffer_offset++];
 
 }
 
-static int16_t nbt__get_int16(nbt__stream_t* stream) {
+static int16_t nbt__get_int16(nbt__read_stream_t* stream) {
   uint8_t bytes[2];
   for (int i = 1; i >= 0; i--) {
     bytes[i] = nbt__get_byte(stream);
@@ -171,7 +183,7 @@ static int16_t nbt__get_int16(nbt__stream_t* stream) {
   return *(int16_t*)(bytes);
 }
 
-static int32_t nbt__get_int32(nbt__stream_t* stream) {
+static int32_t nbt__get_int32(nbt__read_stream_t* stream) {
   uint8_t bytes[4];
   for (int i = 3; i >= 0; i--) {
     bytes[i] = nbt__get_byte(stream);
@@ -179,7 +191,7 @@ static int32_t nbt__get_int32(nbt__stream_t* stream) {
   return *(int32_t*)(bytes);
 }
 
-static int64_t nbt__get_int64(nbt__stream_t* stream) {
+static int64_t nbt__get_int64(nbt__read_stream_t* stream) {
   uint8_t bytes[8];
   for (int i = 7; i >= 0; i--) {
     bytes[i] = nbt__get_byte(stream);
@@ -187,7 +199,7 @@ static int64_t nbt__get_int64(nbt__stream_t* stream) {
   return *(int64_t*)(bytes);
 }
 
-static float nbt__get_float(nbt__stream_t* stream) {
+static float nbt__get_float(nbt__read_stream_t* stream) {
   uint8_t bytes[4];
   for (int i = 3; i >= 0; i--) {
     bytes[i] = nbt__get_byte(stream);
@@ -195,7 +207,7 @@ static float nbt__get_float(nbt__stream_t* stream) {
   return *(float*)(bytes);
 }
 
-static double nbt__get_double(nbt__stream_t* stream) {
+static double nbt__get_double(nbt__read_stream_t* stream) {
   uint8_t bytes[8];
   for (int i = 7; i >= 0; i--) {
     bytes[i] = nbt__get_byte(stream);
@@ -203,7 +215,7 @@ static double nbt__get_double(nbt__stream_t* stream) {
   return *(double*)(bytes);
 }
 
-static nbt_tag_t* nbt__parse(nbt__stream_t* stream, int parse_name, nbt_tag_type_t override_type) {
+static nbt_tag_t* nbt__parse(nbt__read_stream_t* stream, int parse_name, nbt_tag_type_t override_type) {
 
   nbt_tag_t* tag = (nbt_tag_t*)NBT_MALLOC(sizeof(nbt_tag_t));
 
@@ -354,7 +366,7 @@ nbt_tag_t* nbt_parse(nbt_reader_t reader, int parse_flags) {
   uint8_t* buffer = NULL;
   size_t buffer_size = 0;
 
-  nbt__stream_t stream;
+  nbt__read_stream_t stream;
 
   if (compressed) {
     z_stream stream;
@@ -447,6 +459,194 @@ nbt_tag_t* nbt_parse(nbt_reader_t reader, int parse_flags) {
   NBT_FREE(buffer);
 
   return tag;
+
+}
+
+typedef struct {
+  uint8_t* buffer;
+  size_t offset;
+  size_t size;
+} nbt__write_stream_t;
+
+void nbt__put_byte(nbt__write_stream_t* stream, uint8_t value) {
+  if (stream->offset >= stream->size - 1) {
+    stream->buffer = (uint8_t*)NBT_REALLOC(stream->buffer, stream->size * 2);
+    stream->size *= 2;
+  }
+
+  stream->buffer[stream->offset++] = value;
+}
+
+void nbt__put_int16(nbt__write_stream_t* stream, int16_t value) {
+  uint8_t* value_array = (uint8_t*)&value;
+  for (int i = 1; i >= 0; i--) {
+    nbt__put_byte(stream, value_array[i]);
+  }
+}
+
+void nbt__put_int32(nbt__write_stream_t* stream, int32_t value) {
+  uint8_t* value_array = (uint8_t*)&value;
+  for (int i = 3; i >= 0; i--) {
+    nbt__put_byte(stream, value_array[i]);
+  }
+}
+
+void nbt__put_int64(nbt__write_stream_t* stream, int64_t value) {
+  uint8_t* value_array = (uint8_t*)&value;
+  for (int i = 7; i >= 0; i--) {
+    nbt__put_byte(stream, value_array[i]);
+  }
+}
+
+void nbt__put_float(nbt__write_stream_t* stream, float value) {
+  uint8_t* value_array = (uint8_t*)&value;
+  for (int i = 3; i >= 0; i--) {
+    nbt__put_byte(stream, value_array[i]);
+  }
+}
+
+void nbt__put_double(nbt__write_stream_t* stream, double value) {
+  uint8_t* value_array = (uint8_t*)&value;
+  for (int i = 7; i >= 0; i--) {
+    nbt__put_byte(stream, value_array[i]);
+  }
+}
+
+void nbt__write_tag(nbt__write_stream_t* stream, nbt_tag_t* tag, int write_name, int write_type) {
+
+  if (write_type) {
+    nbt__put_byte(stream, tag->type);
+  }
+
+  if (write_name && tag->type != NBT_TYPE_END) {
+    nbt__put_int16(stream, tag->name_size);
+    for (size_t i = 0; i < tag->name_size; i++) {
+      nbt__put_byte(stream, tag->name[i]);
+    }
+  }
+
+  switch (tag->type) {
+    case NBT_TYPE_END: {
+      // Do nothing.
+      break;
+    }
+    case NBT_TYPE_BYTE: {
+      nbt__put_byte(stream, tag->tag_byte.value);
+      break;
+    }
+    case NBT_TYPE_SHORT: {
+      nbt__put_int16(stream, tag->tag_short.value);
+      break;
+    }
+    case NBT_TYPE_INT: {
+      nbt__put_int32(stream, tag->tag_int.value);
+      break;
+    }
+    case NBT_TYPE_LONG: {
+      nbt__put_int64(stream, tag->tag_long.value);
+      break;
+    }
+    case NBT_TYPE_FLOAT: {
+      nbt__put_float(stream, tag->tag_float.value);
+      break;
+    }
+    case NBT_TYPE_DOUBLE: {
+      nbt__put_int64(stream, tag->tag_double.value);
+      break;
+    }
+    case NBT_TYPE_BYTE_ARRAY: {
+      nbt__put_int32(stream, tag->tag_byte_array.size);
+      for (size_t i = 0; i < tag->tag_byte_array.size; i++) {
+        nbt__put_byte(stream, tag->tag_byte_array.value[i]);
+      }
+      break;
+    }
+    case NBT_TYPE_STRING: {
+      nbt__put_int16(stream, tag->tag_string.size);
+      for (size_t i = 0; i < tag->tag_string.size; i++) {
+        nbt__put_byte(stream, tag->tag_string.value[i]);
+      }
+      break;
+    }
+    case NBT_TYPE_LIST: {
+      nbt__put_byte(stream, tag->tag_list.type);
+      nbt__put_int32(stream, tag->tag_list.size);
+      for (size_t i = 0; i < tag->tag_list.size; i++) {
+        nbt__write_tag(stream, tag->tag_list.value[i], 0, 0);
+      }
+      break;
+    }
+    case NBT_TYPE_COMPOUND: {
+      for (size_t i = 0; i < tag->tag_compound.size; i++) {
+        nbt__write_tag(stream, tag->tag_compound.value[i], 1, 1);
+      }
+      nbt__put_byte(stream, 0); // End tag.
+      break;
+    }
+    case NBT_TYPE_INT_ARRAY: {
+      nbt__put_int32(stream, tag->tag_int_array.size);
+      for (size_t i = 0; i < tag->tag_int_array.size; i++) {
+        nbt__put_int32(stream, tag->tag_int_array.value[i]);
+      }
+      break;
+    }
+    case NBT_TYPE_LONG_ARRAY: {
+      nbt__put_int32(stream, tag->tag_long_array.size);
+      for (size_t i = 0; i < tag->tag_long_array.size; i++) {
+        nbt__put_int64(stream, tag->tag_long_array.value[i]);
+      }
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+}
+
+void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags) {
+
+  int compressed;
+  int gzip_format;
+
+  switch (write_flags & 3) {
+    case 1: { // gzip
+      compressed = 1;
+      gzip_format = 1;
+      break;
+    }
+    case 2: { // zlib
+      compressed = 1;
+      gzip_format = 0;
+      break;
+    }
+    case 3: { // raw
+      compressed = 0;
+      gzip_format = 0;
+      break;
+    }
+  }
+
+  nbt__write_stream_t stream;
+  stream.buffer = (uint8_t*)NBT_MALLOC(NBT_BUFFER_SIZE);
+  stream.offset = 0;
+  stream.size = NBT_BUFFER_SIZE;
+
+  nbt__write_tag(&stream, tag, 1, 1);
+
+  if (compressed) {
+    (void)gzip_format;
+  } else {
+    size_t bytes_left = stream.offset + 1;
+    size_t offset = 0;
+    while (bytes_left > 0) {
+      size_t bytes_written = writer.write(writer.userdata, stream.buffer + offset, bytes_left);
+      offset += bytes_written;
+      bytes_left -= bytes_written;
+    }
+  }
+
+  NBT_FREE(stream.buffer);
 
 }
 

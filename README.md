@@ -7,6 +7,7 @@ libnbt is a C/C++ single-header library for working with the NBT format used by 
 libnbt can:
 * Read NBT files, both uncompressed and compressed (in both the zlib and Gzip formats).
 * Create and modify in-memory NBT structures.
+* Write in-memory NBT structures, both uncompressed and compressed (supporting both zlib and Gzip as with reading).
 * Use the new long array tag added in Minecraft 1.12.
 
 libnbt does not provide support for:

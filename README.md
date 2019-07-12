@@ -28,7 +28,7 @@ If your program does not already use zlib or miniz, you will also need to compil
 Documentation for the library is available [here](doc.md).
 
 ## Licence
-libnbt
+libnbt  
 Written in 2019 by IDidMakeThat
 
 To the extent possible under law, the author(s) have dedicated all copyright

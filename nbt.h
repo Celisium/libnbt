@@ -41,6 +41,8 @@
 #define NBT_BUFFER_SIZE 32768
 #endif
 
+#define NBT_COMPRESSION_LEVEL 9
+
 typedef enum {
   NBT_TYPE_END,
   NBT_TYPE_BYTE,
@@ -466,15 +468,17 @@ typedef struct {
   uint8_t* buffer;
   size_t offset;
   size_t size;
+  size_t alloc_size;
 } nbt__write_stream_t;
 
 void nbt__put_byte(nbt__write_stream_t* stream, uint8_t value) {
-  if (stream->offset >= stream->size - 1) {
-    stream->buffer = (uint8_t*)NBT_REALLOC(stream->buffer, stream->size * 2);
-    stream->size *= 2;
+  if (stream->offset >= stream->alloc_size - 1) {
+    stream->buffer = (uint8_t*)NBT_REALLOC(stream->buffer, stream->alloc_size * 2);
+    stream->alloc_size *= 2;
   }
 
   stream->buffer[stream->offset++] = value;
+  stream->size++;
 }
 
 void nbt__put_int16(nbt__write_stream_t* stream, int16_t value) {
@@ -604,6 +608,42 @@ void nbt__write_tag(nbt__write_stream_t* stream, nbt_tag_t* tag, int write_name,
 
 }
 
+uint32_t nbt__crc_table[256];
+
+int nbt__crc_table_computed = 0;
+
+void nbt__make_crc_table(void) {
+  unsigned long c;
+  int n, k;
+
+  for (n = 0; n < 256; n++) {
+    c = (uint32_t)n;
+    for (k = 0; k < 8; k++) {
+      if (c & 1) {
+        c = 0xedb88320L ^ (c >> 1);
+      } else {
+        c = c >> 1;
+      }
+    }
+    nbt__crc_table[n] = c;
+  }
+  nbt__crc_table_computed = 1;
+}
+
+static uint32_t nbt__update_crc(uint32_t crc, uint8_t* buf, size_t len) {
+  uint32_t c = crc ^ 0xffffffffL;
+  size_t n;
+
+  if (!nbt__crc_table_computed) {
+    nbt__make_crc_table();
+  }
+
+  for (n = 0; n < len; n++) {
+    c = nbt__crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
+  }
+  return c ^ 0xffffffffL;
+}
+
 void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags) {
 
   int compressed;
@@ -627,26 +667,92 @@ void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags) {
     }
   }
 
-  nbt__write_stream_t stream;
-  stream.buffer = (uint8_t*)NBT_MALLOC(NBT_BUFFER_SIZE);
-  stream.offset = 0;
-  stream.size = NBT_BUFFER_SIZE;
+  nbt__write_stream_t write_stream;
+  write_stream.buffer = (uint8_t*)NBT_MALLOC(NBT_BUFFER_SIZE);
+  write_stream.offset = 0;
+  write_stream.size = 0;
+  write_stream.alloc_size = NBT_BUFFER_SIZE;
 
-  nbt__write_tag(&stream, tag, 1, 1);
+  nbt__write_tag(&write_stream, tag, 1, 1);
 
   if (compressed) {
-    (void)gzip_format;
+
+    z_stream stream;
+    stream.zalloc = Z_NULL;
+    stream.zfree = Z_NULL;
+    stream.opaque = Z_NULL;
+
+    int window_bits = gzip_format ? -Z_DEFAULT_WINDOW_BITS : Z_DEFAULT_WINDOW_BITS;
+
+    if (deflateInit2(&stream, NBT_COMPRESSION_LEVEL, Z_DEFLATED, window_bits, 8, Z_DEFAULT_STRATEGY) != Z_OK) {
+      NBT_FREE(write_stream.buffer);
+      return;
+    }
+
+    if (gzip_format) {
+      uint8_t header[10] = { 31, 139, 8, 0, 0, 0, 0, 0, 2, 255 };
+      writer.write(writer.userdata, header, 10);
+    }
+
+    uint8_t in_buffer[NBT_BUFFER_SIZE];
+    uint8_t out_buffer[NBT_BUFFER_SIZE];
+    int flush;
+    uint32_t crc = 0;
+    do {
+
+      write_stream.offset = 0;
+
+      flush = Z_NO_FLUSH;
+      size_t bytes_read = 0;
+      for (size_t i = 0; i < NBT_BUFFER_SIZE; i++) {
+
+        in_buffer[i] = write_stream.buffer[write_stream.offset++];
+
+        bytes_read++;
+
+        if (write_stream.offset >= write_stream.size) {
+          flush = Z_FINISH;
+          break;
+        }
+
+      }
+
+      stream.avail_in = bytes_read;
+      stream.next_in = in_buffer;
+
+      do {
+        stream.avail_out = NBT_BUFFER_SIZE;
+        stream.next_out = out_buffer;
+
+        deflate(&stream, flush);
+
+        size_t have = NBT_BUFFER_SIZE - stream.avail_out;
+        writer.write(writer.userdata, out_buffer, have);
+
+        crc = nbt__update_crc(crc, out_buffer, have);
+
+      } while (stream.avail_out == 0);
+
+    } while (flush != Z_FINISH);
+
+    deflateEnd(&stream);
+
+    if (gzip_format) {
+      writer.write(writer.userdata, (uint8_t*)&crc, 4);
+      writer.write(writer.userdata, (uint8_t*)&write_stream.size, 4);
+    }
+
   } else {
-    size_t bytes_left = stream.offset + 1;
+    size_t bytes_left = write_stream.size;
     size_t offset = 0;
     while (bytes_left > 0) {
-      size_t bytes_written = writer.write(writer.userdata, stream.buffer + offset, bytes_left);
+      size_t bytes_written = writer.write(writer.userdata, write_stream.buffer + offset, bytes_left);
       offset += bytes_written;
       bytes_left -= bytes_written;
     }
   }
 
-  NBT_FREE(stream.buffer);
+  NBT_FREE(write_stream.buffer);
 
 }
 

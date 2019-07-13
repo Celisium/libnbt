@@ -162,9 +162,25 @@ int main() {
 
   write_nbt_file("write_test_raw.nbt", tag_level, NBT_WRITE_FLAG_USE_RAW);
 
-  nbt_tag_t* read_test = read_nbt_file("write_test_raw.nbt", NBT_PARSE_FLAG_USE_RAW);
+  nbt_tag_t* read_test_1 = read_nbt_file("write_test_raw.nbt", NBT_PARSE_FLAG_USE_RAW);
 
-  print_nbt_tree(read_test, 2);
+  print_nbt_tree(read_test_1, 2);
+
+  printf("Writing Example 2:\n");
+
+  write_nbt_file("write_test_zlib.nbt", tag_level, NBT_WRITE_FLAG_USE_ZLIB);
+
+  nbt_tag_t* read_test_2 = read_nbt_file("write_test_zlib.nbt", NBT_PARSE_FLAG_USE_ZLIB);
+
+  print_nbt_tree(read_test_2, 2);
+
+  printf("Writing Example 3:\n");
+
+  write_nbt_file("write_test_gzip.nbt", tag_level, NBT_WRITE_FLAG_USE_GZIP);
+
+  nbt_tag_t* read_test_3 = read_nbt_file("write_test_gzip.nbt", NBT_PARSE_FLAG_USE_GZIP);
+
+  print_nbt_tree(read_test_3, 2);
 
   return 0; 
 }

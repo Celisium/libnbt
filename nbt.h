@@ -698,9 +698,10 @@ void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags) {
     uint8_t out_buffer[NBT_BUFFER_SIZE];
     int flush;
     uint32_t crc = 0;
-    do {
 
-      write_stream.offset = 0;
+    write_stream.offset = 0;
+
+    do {
 
       flush = Z_NO_FLUSH;
       size_t bytes_read = 0;

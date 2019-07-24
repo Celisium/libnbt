@@ -13,6 +13,10 @@
 #ifndef NBT_H
 #define NBT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define LIBNBT_VERSION 10
 #define LIBNBT_NBT_VERSION 19133
 
@@ -149,18 +153,22 @@ nbt_tag_t* nbt_new_tag_long(int64_t value);
 nbt_tag_t* nbt_new_tag_float(float value);
 nbt_tag_t* nbt_new_tag_double(double value);
 nbt_tag_t* nbt_new_tag_byte_array(int8_t* value, size_t size);
-nbt_tag_t* nbt_new_tag_string(char* value, size_t size);
+nbt_tag_t* nbt_new_tag_string(const char* value, size_t size);
 nbt_tag_t* nbt_new_tag_list(nbt_tag_type_t type);
 nbt_tag_t* nbt_new_tag_compound();
 nbt_tag_t* nbt_new_tag_int_array(int32_t* value, size_t size);
 nbt_tag_t* nbt_new_tag_long_array(int64_t* value, size_t size);
 
-void nbt_set_tag_name(nbt_tag_t* tag, char* name, size_t size);
+void nbt_set_tag_name(nbt_tag_t* tag, const char* name, size_t size);
 
 void nbt_tag_list_append(nbt_tag_t* list, nbt_tag_t* value);
 void nbt_tag_compound_append(nbt_tag_t* compound, nbt_tag_t* value);
 
 void nbt_free_tag(nbt_tag_t* tag);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
@@ -831,7 +839,7 @@ nbt_tag_t* nbt_new_tag_byte_array(int8_t* value, size_t size) {
   return tag;
 }
 
-nbt_tag_t* nbt_new_tag_string(char* value, size_t size) {
+nbt_tag_t* nbt_new_tag_string(const char* value, size_t size) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
   tag->type = NBT_TYPE_STRING;
@@ -889,7 +897,7 @@ nbt_tag_t* nbt_new_tag_long_array(int64_t* value, size_t size) {
   return tag;
 }
 
-void nbt_set_tag_name(nbt_tag_t* tag, char* name, size_t size) {
+void nbt_set_tag_name(nbt_tag_t* tag, const char* name, size_t size) {
   if (tag->name) {
     NBT_FREE(tag->name);
   }
@@ -900,13 +908,13 @@ void nbt_set_tag_name(nbt_tag_t* tag, char* name, size_t size) {
 }
 
 void nbt_tag_list_append(nbt_tag_t* list, nbt_tag_t* value) {
-  list->tag_list.value = NBT_REALLOC(list->tag_list.value, list->tag_list.size + 1);
+  list->tag_list.value = NBT_REALLOC(list->tag_list.value, (list->tag_list.size + 1) * sizeof(nbt_tag_t*)) ;
   list->tag_list.value[list->tag_list.size] = value;
   list->tag_list.size++;
 }
 
 void nbt_tag_compound_append(nbt_tag_t* compound, nbt_tag_t* value) {
-  compound->tag_compound.value = NBT_REALLOC(compound->tag_compound.value, compound->tag_compound.size + 1);
+  compound->tag_compound.value = NBT_REALLOC(compound->tag_compound.value, (compound->tag_compound.size + 1) * sizeof(nbt_tag_t*));
   compound->tag_compound.value[compound->tag_compound.size] = value;
   compound->tag_compound.size++;
 }

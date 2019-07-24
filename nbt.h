@@ -29,6 +29,7 @@ extern "C" {
 #define NBT_REALLOC realloc
 #define NBT_FREE free
 #define NBT_MEMCPY memcpy
+#define NBT_MEMCMP memcmp
 #endif
 
 #ifndef NBT_NO_STDINT
@@ -162,7 +163,9 @@ nbt_tag_t* nbt_new_tag_long_array(int64_t* value, size_t size);
 void nbt_set_tag_name(nbt_tag_t* tag, const char* name, size_t size);
 
 void nbt_tag_list_append(nbt_tag_t* list, nbt_tag_t* value);
+nbt_tag_t* nbt_tag_list_get(nbt_tag_t* tag, size_t index);
 void nbt_tag_compound_append(nbt_tag_t* compound, nbt_tag_t* value);
+nbt_tag_t* nbt_tag_compound_get(nbt_tag_t* tag, const char* key);
 
 void nbt_free_tag(nbt_tag_t* tag);
 
@@ -913,10 +916,26 @@ void nbt_tag_list_append(nbt_tag_t* list, nbt_tag_t* value) {
   list->tag_list.size++;
 }
 
+nbt_tag_t* nbt_tag_list_get(nbt_tag_t* tag, size_t index) {
+  return tag->tag_list.value[index];
+}
+
 void nbt_tag_compound_append(nbt_tag_t* compound, nbt_tag_t* value) {
   compound->tag_compound.value = NBT_REALLOC(compound->tag_compound.value, (compound->tag_compound.size + 1) * sizeof(nbt_tag_t*));
   compound->tag_compound.value[compound->tag_compound.size] = value;
   compound->tag_compound.size++;
+}
+
+nbt_tag_t* nbt_tag_compound_get(nbt_tag_t* tag, const char* key) {
+  for (size_t i = 0; i < tag->tag_compound.size; i++) {
+    nbt_tag_t* compare_tag = tag->tag_compound.value[i];
+
+    if (NBT_MEMCMP(compare_tag->name, key, compare_tag->name_size) == 0) {
+      return compare_tag;
+    }
+  }
+
+  return NULL;
 }
 
 void nbt_free_tag(nbt_tag_t* tag) {

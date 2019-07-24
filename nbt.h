@@ -566,7 +566,7 @@ void nbt__write_tag(nbt__write_stream_t* stream, nbt_tag_t* tag, int write_name,
       break;
     }
     case NBT_TYPE_DOUBLE: {
-      nbt__put_int64(stream, tag->tag_double.value);
+      nbt__put_double(stream, tag->tag_double.value);
       break;
     }
     case NBT_TYPE_BYTE_ARRAY: {

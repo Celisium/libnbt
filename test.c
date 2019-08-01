@@ -182,5 +182,12 @@ int main() {
 
   print_nbt_tree(read_test_3, 2);
 
+  // Free the tags.
+  nbt_free_tag(tag);
+  nbt_free_tag(tag_level);
+  nbt_free_tag(read_test_1);
+  nbt_free_tag(read_test_2);
+  nbt_free_tag(read_test_3);
+
   return 0; 
 }

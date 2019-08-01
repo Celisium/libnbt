@@ -952,12 +952,14 @@ void nbt_free_tag(nbt_tag_t* tag) {
       for (size_t i = 0; i < tag->tag_list.size; i++) {
         nbt_free_tag(tag->tag_list.value[i]);
       }
+      NBT_FREE(tag->tag_list.value);
       break;
     }
     case NBT_TYPE_COMPOUND: {
       for (size_t i = 0; i < tag->tag_compound.size; i++) {
         nbt_free_tag(tag->tag_compound.value[i]);
       }
+      NBT_FREE(tag->tag_compound.value);
       break;
     }
     case NBT_TYPE_INT_ARRAY: {
@@ -972,6 +974,11 @@ void nbt_free_tag(nbt_tag_t* tag) {
       break;
     }
   }
+
+  if (tag->name) {
+    NBT_FREE(tag->name);
+  }
+
   NBT_FREE(tag);
 }
 

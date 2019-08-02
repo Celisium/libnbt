@@ -91,6 +91,24 @@ It contains a pointer to a function used to read data, and a user-provided point
 * `read`: A pointer to the function which is used to read data. The function is expected to copy up to `size` bytes into the buffer pointed to by `data`, with the return value being the number of bytes actually read.
 * `userdata`: An arbitrary, user-provided pointer which is passed as the `userdata` parameter to the aforementioned `read` function.
 
+### `nbt_writer_t`
+
+#### Definition
+```c
+typedef struct {
+  size_t (*write)(void* userdata, uint8_t* data, size_t size);
+  void* userdata;
+} nbt_writer_t;
+```
+
+#### Description
+`nbt_writer_t` is a struct which can be used to write NBT data to an arbitrary destination.
+It contains a pointer to a function used to write data, and a user-provided pointer which is passed to this function.
+
+#### Members
+* `write`: A pointer to the function which is used to write data. The function is expected to write up to `size` bytes from the buffer pointed to by `data`, with the return value being the number of bytes actually written.
+* `userdata`: An arbitrary, user-provided pointer which is passed as the `userdata` parameter to the aforementioned `write` function.
+
 ## Enums
 
 ### `nbt_tag_type_t`

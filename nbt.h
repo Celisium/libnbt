@@ -42,6 +42,10 @@ extern "C" {
 #include "miniz.h"
 #endif
 
+#ifndef Z_DEFAULT_WINDOW_BITS
+#define Z_DEFAULT_WINDOW_BITS 15
+#endif
+
 #ifndef NBT_BUFFER_SIZE
 #define NBT_BUFFER_SIZE 32768
 #endif

@@ -10,9 +10,11 @@ libnbt can:
 * Write in-memory NBT structures, both uncompressed and compressed (supporting both zlib and Gzip as with reading).
 * Use the new long array tag added in Minecraft 1.12.
 
-libnbt does not provide support for:
-* Reading .mca files used for storing regions (unlikely to be added).
-* Working with the SNBT format (likely to be added in the future).
+libnbt does yet not provide support for:
+* Reading .mca files used for storing regions.
+* Working with the SNBT format.
+
+These are likely to be added in the future.
 
 ## Usage Instructions
 libnbt is dependent on either [zlib](https://www.zlib.net/) or [miniz](https://github.com/richgel999/miniz). A copy of miniz is included in this repository.

@@ -156,7 +156,7 @@ nbt_tag_t* nbt_new_tag_double(double value);
 nbt_tag_t* nbt_new_tag_byte_array(int8_t* value, size_t size);
 nbt_tag_t* nbt_new_tag_string(const char* value, size_t size);
 nbt_tag_t* nbt_new_tag_list(nbt_tag_type_t type);
-nbt_tag_t* nbt_new_tag_compound();
+nbt_tag_t* nbt_new_tag_compound(void);
 nbt_tag_t* nbt_new_tag_int_array(int32_t* value, size_t size);
 nbt_tag_t* nbt_new_tag_long_array(int64_t* value, size_t size);
 
@@ -768,7 +768,7 @@ void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags) {
 
 }
 
-static nbt_tag_t* nbt__new_tag_base() {
+static nbt_tag_t* nbt__new_tag_base(void) {
   nbt_tag_t* tag = (nbt_tag_t*)NBT_MALLOC(sizeof(nbt_tag_t));
   tag->name = NULL;
   tag->name_size = 0;
@@ -866,7 +866,7 @@ nbt_tag_t* nbt_new_tag_list(nbt_tag_type_t type) {
   return tag;
 }
 
-nbt_tag_t* nbt_new_tag_compound() {
+nbt_tag_t* nbt_new_tag_compound(void) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
   tag->type = NBT_TYPE_COMPOUND;

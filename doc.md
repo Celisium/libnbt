@@ -204,7 +204,7 @@ nbt_tag_t* nbt_new_tag_double(double value);
 nbt_tag_t* nbt_new_tag_byte_array(int8_t* value, size_t size);
 nbt_tag_t* nbt_new_tag_string(const char* value, size_t size);
 nbt_tag_t* nbt_new_tag_list(nbt_tag_type_t type);
-nbt_tag_t* nbt_new_tag_compound();
+nbt_tag_t* nbt_new_tag_compound(void);
 nbt_tag_t* nbt_new_tag_int_array(int32_t* value, size_t size);
 nbt_tag_t* nbt_new_tag_long_array(int64_t* value, size_t size);
 ```

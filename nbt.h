@@ -237,9 +237,9 @@ static nbt_tag_t* nbt__parse(nbt__read_stream_t* stream, int parse_name, nbt_tag
   nbt_tag_t* tag = (nbt_tag_t*)NBT_MALLOC(sizeof(nbt_tag_t));
 
   if (override_type == NBT_NO_OVERRIDE) {
-    tag->type = nbt__get_byte(stream);
+    tag->type = (nbt_tag_type_t)nbt__get_byte(stream);
   } else {
-    tag->type = override_type;
+    tag->type = (nbt_tag_type_t)override_type;
   }
 
   if (parse_name && tag->type != NBT_TYPE_END) {
@@ -301,7 +301,7 @@ static nbt_tag_t* nbt__parse(nbt__read_stream_t* stream, int parse_name, nbt_tag
       break;
     }
     case NBT_TYPE_LIST: {
-      tag->tag_list.type = nbt__get_byte(stream);
+      tag->tag_list.type = (nbt_tag_type_t)nbt__get_byte(stream);
       tag->tag_list.size = nbt__get_int32(stream);
       tag->tag_list.value = (nbt_tag_t**)NBT_MALLOC(tag->tag_list.size * sizeof(nbt_tag_t*));
       for (size_t i = 0; i < tag->tag_list.size; i++) {
@@ -783,7 +783,7 @@ static nbt_tag_t* nbt__new_tag_base(void) {
 nbt_tag_t* nbt_new_tag_byte(int8_t value) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_BYTE;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_BYTE;
   tag->tag_byte.value = value;
 
   return tag;
@@ -792,7 +792,7 @@ nbt_tag_t* nbt_new_tag_byte(int8_t value) {
 nbt_tag_t* nbt_new_tag_short(int16_t value) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_SHORT;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_SHORT;
   tag->tag_short.value = value;
 
   return tag;
@@ -801,7 +801,7 @@ nbt_tag_t* nbt_new_tag_short(int16_t value) {
 nbt_tag_t* nbt_new_tag_int(int32_t value) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_INT;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_INT;
   tag->tag_int.value = value;
 
   return tag;
@@ -810,7 +810,7 @@ nbt_tag_t* nbt_new_tag_int(int32_t value) {
 nbt_tag_t* nbt_new_tag_long(int64_t value) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_LONG;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_LONG;
   tag->tag_long.value = value;
 
   return tag;
@@ -819,7 +819,7 @@ nbt_tag_t* nbt_new_tag_long(int64_t value) {
 nbt_tag_t* nbt_new_tag_float(float value) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_FLOAT;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_FLOAT;
   tag->tag_float.value = value;
 
   return tag;
@@ -828,7 +828,7 @@ nbt_tag_t* nbt_new_tag_float(float value) {
 nbt_tag_t* nbt_new_tag_double(double value) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_DOUBLE;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_DOUBLE;
   tag->tag_double.value = value;
 
   return tag;
@@ -837,7 +837,7 @@ nbt_tag_t* nbt_new_tag_double(double value) {
 nbt_tag_t* nbt_new_tag_byte_array(int8_t* value, size_t size) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_BYTE_ARRAY;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_BYTE_ARRAY;
   tag->tag_byte_array.size = size;
   tag->tag_byte_array.value = (int8_t*)NBT_MALLOC(size);
 
@@ -849,7 +849,7 @@ nbt_tag_t* nbt_new_tag_byte_array(int8_t* value, size_t size) {
 nbt_tag_t* nbt_new_tag_string(const char* value, size_t size) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_STRING;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_STRING;
   tag->tag_string.size = size;
   tag->tag_string.value = (char*)NBT_MALLOC(size + 1);
 
@@ -862,7 +862,7 @@ nbt_tag_t* nbt_new_tag_string(const char* value, size_t size) {
 nbt_tag_t* nbt_new_tag_list(nbt_tag_type_t type) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_LIST;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_LIST;
   tag->tag_list.type = type;
   tag->tag_list.size = 0;
   tag->tag_list.value = NULL;
@@ -873,7 +873,7 @@ nbt_tag_t* nbt_new_tag_list(nbt_tag_type_t type) {
 nbt_tag_t* nbt_new_tag_compound(void) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_COMPOUND;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_COMPOUND;
   tag->tag_compound.size = 0;
   tag->tag_compound.value = NULL;
 
@@ -883,7 +883,7 @@ nbt_tag_t* nbt_new_tag_compound(void) {
 nbt_tag_t* nbt_new_tag_int_array(int32_t* value, size_t size) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_INT_ARRAY;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_INT_ARRAY;
   tag->tag_int_array.size = size;
   tag->tag_int_array.value = (int32_t*)NBT_MALLOC(size * sizeof(int32_t));
 
@@ -895,7 +895,7 @@ nbt_tag_t* nbt_new_tag_int_array(int32_t* value, size_t size) {
 nbt_tag_t* nbt_new_tag_long_array(int64_t* value, size_t size) {
   nbt_tag_t* tag = nbt__new_tag_base();
 
-  tag->type = NBT_TYPE_LONG_ARRAY;
+  tag->type = (nbt_tag_type_t)NBT_TYPE_LONG_ARRAY;
   tag->tag_long_array.size = size;
   tag->tag_long_array.value = (int64_t*)NBT_MALLOC(size * sizeof(int64_t));
 
@@ -915,7 +915,7 @@ void nbt_set_tag_name(nbt_tag_t* tag, const char* name, size_t size) {
 }
 
 void nbt_tag_list_append(nbt_tag_t* list, nbt_tag_t* value) {
-  list->tag_list.value = NBT_REALLOC(list->tag_list.value, (list->tag_list.size + 1) * sizeof(nbt_tag_t*)) ;
+  list->tag_list.value = (nbt_tag_t**)NBT_REALLOC(list->tag_list.value, (list->tag_list.size + 1) * sizeof(nbt_tag_t*)) ;
   list->tag_list.value[list->tag_list.size] = value;
   list->tag_list.size++;
 }
@@ -925,7 +925,7 @@ nbt_tag_t* nbt_tag_list_get(nbt_tag_t* tag, size_t index) {
 }
 
 void nbt_tag_compound_append(nbt_tag_t* compound, nbt_tag_t* value) {
-  compound->tag_compound.value = NBT_REALLOC(compound->tag_compound.value, (compound->tag_compound.size + 1) * sizeof(nbt_tag_t*));
+  compound->tag_compound.value = (nbt_tag_t**)NBT_REALLOC(compound->tag_compound.value, (compound->tag_compound.size + 1) * sizeof(nbt_tag_t*));
   compound->tag_compound.value[compound->tag_compound.size] = value;
   compound->tag_compound.size++;
 }

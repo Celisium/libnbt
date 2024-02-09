@@ -32,7 +32,7 @@ Documentation for the library is available [here](doc.md).
 
 ## Licence
 libnbt  
-Written in 2019 by IDidMakeThat
+Written in 2019-2024 by Celisium
 
 To the extent possible under law, the author(s) have dedicated all copyright
 and related and neighboring rights to this software to the public domain

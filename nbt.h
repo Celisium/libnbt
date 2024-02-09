@@ -184,69 +184,69 @@ void nbt_free_tag(nbt_tag_t* tag);
 typedef struct {
   uint8_t* buffer;
   size_t buffer_offset;
-} nbt__read_stream_t;
+} nbt_internal_read_stream_t;
 
-static uint8_t nbt__get_byte(nbt__read_stream_t* stream) {
+static uint8_t nbt_internal_get_byte(nbt_internal_read_stream_t* stream) {
 
   return stream->buffer[stream->buffer_offset++];
 
 }
 
-static int16_t nbt__get_int16(nbt__read_stream_t* stream) {
+static int16_t nbt_internal_get_int16(nbt_internal_read_stream_t* stream) {
   uint8_t bytes[2];
   for (int i = 1; i >= 0; i--) {
-    bytes[i] = nbt__get_byte(stream);
+    bytes[i] = nbt_internal_get_byte(stream);
   }
   return *(int16_t*)(bytes);
 }
 
-static int32_t nbt__get_int32(nbt__read_stream_t* stream) {
+static int32_t nbt_internal_get_int32(nbt_internal_read_stream_t* stream) {
   uint8_t bytes[4];
   for (int i = 3; i >= 0; i--) {
-    bytes[i] = nbt__get_byte(stream);
+    bytes[i] = nbt_internal_get_byte(stream);
   }
   return *(int32_t*)(bytes);
 }
 
-static int64_t nbt__get_int64(nbt__read_stream_t* stream) {
+static int64_t nbt_internal_get_int64(nbt_internal_read_stream_t* stream) {
   uint8_t bytes[8];
   for (int i = 7; i >= 0; i--) {
-    bytes[i] = nbt__get_byte(stream);
+    bytes[i] = nbt_internal_get_byte(stream);
   }
   return *(int64_t*)(bytes);
 }
 
-static float nbt__get_float(nbt__read_stream_t* stream) {
+static float nbt_internal_get_float(nbt_internal_read_stream_t* stream) {
   uint8_t bytes[4];
   for (int i = 3; i >= 0; i--) {
-    bytes[i] = nbt__get_byte(stream);
+    bytes[i] = nbt_internal_get_byte(stream);
   }
   return *(float*)(bytes);
 }
 
-static double nbt__get_double(nbt__read_stream_t* stream) {
+static double nbt_internal_get_double(nbt_internal_read_stream_t* stream) {
   uint8_t bytes[8];
   for (int i = 7; i >= 0; i--) {
-    bytes[i] = nbt__get_byte(stream);
+    bytes[i] = nbt_internal_get_byte(stream);
   }
   return *(double*)(bytes);
 }
 
-static nbt_tag_t* nbt__parse(nbt__read_stream_t* stream, int parse_name, nbt_tag_type_t override_type) {
+static nbt_tag_t* nbt_internal_parse(nbt_internal_read_stream_t* stream, int parse_name, nbt_tag_type_t override_type) {
 
   nbt_tag_t* tag = (nbt_tag_t*)NBT_MALLOC(sizeof(nbt_tag_t));
 
   if (override_type == NBT_NO_OVERRIDE) {
-    tag->type = nbt__get_byte(stream);
+    tag->type = nbt_internal_get_byte(stream);
   } else {
     tag->type = override_type;
   }
 
   if (parse_name && tag->type != NBT_TYPE_END) {
-    tag->name_size = nbt__get_int16(stream);
+    tag->name_size = nbt_internal_get_int16(stream);
     tag->name = (char*)NBT_MALLOC(tag->name_size + 1);
     for (size_t i = 0; i < tag->name_size; i++) {
-      tag->name[i] = nbt__get_byte(stream);
+      tag->name[i] = nbt_internal_get_byte(stream);
     }
     tag->name[tag->name_size] = '\0';
   } else {
@@ -260,52 +260,52 @@ static nbt_tag_t* nbt__parse(nbt__read_stream_t* stream, int parse_name, nbt_tag
       break;
     }
     case NBT_TYPE_BYTE: {
-      tag->tag_byte.value = nbt__get_byte(stream);
+      tag->tag_byte.value = nbt_internal_get_byte(stream);
       break;
     }
     case NBT_TYPE_SHORT: {
-      tag->tag_short.value = nbt__get_int16(stream);
+      tag->tag_short.value = nbt_internal_get_int16(stream);
       break;
     }
     case NBT_TYPE_INT: {
-      tag->tag_int.value = nbt__get_int32(stream);
+      tag->tag_int.value = nbt_internal_get_int32(stream);
       break;
     }
     case NBT_TYPE_LONG: {
-      tag->tag_long.value = nbt__get_int64(stream);
+      tag->tag_long.value = nbt_internal_get_int64(stream);
       break;
     }
     case NBT_TYPE_FLOAT: {
-      tag->tag_float.value = nbt__get_float(stream);
+      tag->tag_float.value = nbt_internal_get_float(stream);
       break;
     }
     case NBT_TYPE_DOUBLE: {
-      tag->tag_double.value = nbt__get_double(stream);
+      tag->tag_double.value = nbt_internal_get_double(stream);
       break;
     }
     case NBT_TYPE_BYTE_ARRAY: {
-      tag->tag_byte_array.size = nbt__get_int32(stream);
+      tag->tag_byte_array.size = nbt_internal_get_int32(stream);
       tag->tag_byte_array.value = (int8_t*)NBT_MALLOC(tag->tag_byte_array.size);
       for (size_t i = 0; i < tag->tag_byte_array.size; i++) {
-        tag->tag_byte_array.value[i] = nbt__get_byte(stream);
+        tag->tag_byte_array.value[i] = nbt_internal_get_byte(stream);
       }
       break;
     }
     case NBT_TYPE_STRING: {
-      tag->tag_string.size = nbt__get_int16(stream);
+      tag->tag_string.size = nbt_internal_get_int16(stream);
       tag->tag_string.value = (char*)NBT_MALLOC(tag->tag_string.size + 1);
       for (size_t i = 0; i < tag->tag_string.size; i++) {
-        tag->tag_string.value[i] = nbt__get_byte(stream);
+        tag->tag_string.value[i] = nbt_internal_get_byte(stream);
       }
       tag->tag_string.value[tag->tag_string.size] = '\0';
       break;
     }
     case NBT_TYPE_LIST: {
-      tag->tag_list.type = nbt__get_byte(stream);
-      tag->tag_list.size = nbt__get_int32(stream);
+      tag->tag_list.type = nbt_internal_get_byte(stream);
+      tag->tag_list.size = nbt_internal_get_int32(stream);
       tag->tag_list.value = (nbt_tag_t**)NBT_MALLOC(tag->tag_list.size * sizeof(nbt_tag_t*));
       for (size_t i = 0; i < tag->tag_list.size; i++) {
-        tag->tag_list.value[i] = nbt__parse(stream, 0, tag->tag_list.type);
+        tag->tag_list.value[i] = nbt_internal_parse(stream, 0, tag->tag_list.type);
       }
       break;
     }
@@ -313,7 +313,7 @@ static nbt_tag_t* nbt__parse(nbt__read_stream_t* stream, int parse_name, nbt_tag
       tag->tag_compound.size = 0;
       tag->tag_compound.value = NULL;
       for (;;) {
-        nbt_tag_t* inner_tag = nbt__parse(stream, 1, NBT_NO_OVERRIDE);
+        nbt_tag_t* inner_tag = nbt_internal_parse(stream, 1, NBT_NO_OVERRIDE);
 
         if (inner_tag->type == NBT_TYPE_END) {
           nbt_free_tag(inner_tag);
@@ -327,18 +327,18 @@ static nbt_tag_t* nbt__parse(nbt__read_stream_t* stream, int parse_name, nbt_tag
       break;
     }
     case NBT_TYPE_INT_ARRAY: {
-      tag->tag_int_array.size = nbt__get_int32(stream);
+      tag->tag_int_array.size = nbt_internal_get_int32(stream);
       tag->tag_int_array.value = (int32_t*)NBT_MALLOC(tag->tag_int_array.size * sizeof(int32_t));
       for (size_t i = 0; i < tag->tag_int_array.size; i++) {
-        tag->tag_int_array.value[i] = nbt__get_int32(stream);
+        tag->tag_int_array.value[i] = nbt_internal_get_int32(stream);
       }
       break;
     }
     case NBT_TYPE_LONG_ARRAY: {
-      tag->tag_long_array.size = nbt__get_int32(stream);
+      tag->tag_long_array.size = nbt_internal_get_int32(stream);
       tag->tag_long_array.value = (int64_t*)NBT_MALLOC(tag->tag_long_array.size * sizeof(int64_t));
       for (size_t i = 0; i < tag->tag_long_array.size; i++) {
-        tag->tag_long_array.value[i] = nbt__get_int64(stream);
+        tag->tag_long_array.value[i] = nbt_internal_get_int64(stream);
       }
       break;
     }
@@ -383,7 +383,7 @@ nbt_tag_t* nbt_parse(nbt_reader_t reader, int parse_flags) {
   uint8_t* buffer = NULL;
   size_t buffer_size = 0;
 
-  nbt__read_stream_t stream;
+  nbt_internal_read_stream_t stream;
 
   if (compressed) {
     z_stream stream;
@@ -471,7 +471,7 @@ nbt_tag_t* nbt_parse(nbt_reader_t reader, int parse_flags) {
   stream.buffer = buffer;
   stream.buffer_offset = 0;
 
-  nbt_tag_t* tag = nbt__parse(&stream, 1, NBT_NO_OVERRIDE);
+  nbt_tag_t* tag = nbt_internal_parse(&stream, 1, NBT_NO_OVERRIDE);
 
   NBT_FREE(buffer);
 
@@ -484,9 +484,9 @@ typedef struct {
   size_t offset;
   size_t size;
   size_t alloc_size;
-} nbt__write_stream_t;
+} nbt_internal_write_stream_t;
 
-void nbt__put_byte(nbt__write_stream_t* stream, uint8_t value) {
+void nbt_internal_put_byte(nbt_internal_write_stream_t* stream, uint8_t value) {
   if (stream->offset >= stream->alloc_size - 1) {
     stream->buffer = (uint8_t*)NBT_REALLOC(stream->buffer, stream->alloc_size * 2);
     stream->alloc_size *= 2;
@@ -496,51 +496,51 @@ void nbt__put_byte(nbt__write_stream_t* stream, uint8_t value) {
   stream->size++;
 }
 
-void nbt__put_int16(nbt__write_stream_t* stream, int16_t value) {
+void nbt_internal_put_int16(nbt_internal_write_stream_t* stream, int16_t value) {
   uint8_t* value_array = (uint8_t*)&value;
   for (int i = 1; i >= 0; i--) {
-    nbt__put_byte(stream, value_array[i]);
+    nbt_internal_put_byte(stream, value_array[i]);
   }
 }
 
-void nbt__put_int32(nbt__write_stream_t* stream, int32_t value) {
+void nbt_internal_put_int32(nbt_internal_write_stream_t* stream, int32_t value) {
   uint8_t* value_array = (uint8_t*)&value;
   for (int i = 3; i >= 0; i--) {
-    nbt__put_byte(stream, value_array[i]);
+    nbt_internal_put_byte(stream, value_array[i]);
   }
 }
 
-void nbt__put_int64(nbt__write_stream_t* stream, int64_t value) {
+void nbt_internal_put_int64(nbt_internal_write_stream_t* stream, int64_t value) {
   uint8_t* value_array = (uint8_t*)&value;
   for (int i = 7; i >= 0; i--) {
-    nbt__put_byte(stream, value_array[i]);
+    nbt_internal_put_byte(stream, value_array[i]);
   }
 }
 
-void nbt__put_float(nbt__write_stream_t* stream, float value) {
+void nbt_internal_put_float(nbt_internal_write_stream_t* stream, float value) {
   uint8_t* value_array = (uint8_t*)&value;
   for (int i = 3; i >= 0; i--) {
-    nbt__put_byte(stream, value_array[i]);
+    nbt_internal_put_byte(stream, value_array[i]);
   }
 }
 
-void nbt__put_double(nbt__write_stream_t* stream, double value) {
+void nbt_internal_put_double(nbt_internal_write_stream_t* stream, double value) {
   uint8_t* value_array = (uint8_t*)&value;
   for (int i = 7; i >= 0; i--) {
-    nbt__put_byte(stream, value_array[i]);
+    nbt_internal_put_byte(stream, value_array[i]);
   }
 }
 
-void nbt__write_tag(nbt__write_stream_t* stream, nbt_tag_t* tag, int write_name, int write_type) {
+void nbt_internal_write_tag(nbt_internal_write_stream_t* stream, nbt_tag_t* tag, int write_name, int write_type) {
 
   if (write_type) {
-    nbt__put_byte(stream, tag->type);
+    nbt_internal_put_byte(stream, tag->type);
   }
 
   if (write_name && tag->type != NBT_TYPE_END) {
-    nbt__put_int16(stream, tag->name_size);
+    nbt_internal_put_int16(stream, tag->name_size);
     for (size_t i = 0; i < tag->name_size; i++) {
-      nbt__put_byte(stream, tag->name[i]);
+      nbt_internal_put_byte(stream, tag->name[i]);
     }
   }
 
@@ -550,69 +550,69 @@ void nbt__write_tag(nbt__write_stream_t* stream, nbt_tag_t* tag, int write_name,
       break;
     }
     case NBT_TYPE_BYTE: {
-      nbt__put_byte(stream, tag->tag_byte.value);
+      nbt_internal_put_byte(stream, tag->tag_byte.value);
       break;
     }
     case NBT_TYPE_SHORT: {
-      nbt__put_int16(stream, tag->tag_short.value);
+      nbt_internal_put_int16(stream, tag->tag_short.value);
       break;
     }
     case NBT_TYPE_INT: {
-      nbt__put_int32(stream, tag->tag_int.value);
+      nbt_internal_put_int32(stream, tag->tag_int.value);
       break;
     }
     case NBT_TYPE_LONG: {
-      nbt__put_int64(stream, tag->tag_long.value);
+      nbt_internal_put_int64(stream, tag->tag_long.value);
       break;
     }
     case NBT_TYPE_FLOAT: {
-      nbt__put_float(stream, tag->tag_float.value);
+      nbt_internal_put_float(stream, tag->tag_float.value);
       break;
     }
     case NBT_TYPE_DOUBLE: {
-      nbt__put_double(stream, tag->tag_double.value);
+      nbt_internal_put_double(stream, tag->tag_double.value);
       break;
     }
     case NBT_TYPE_BYTE_ARRAY: {
-      nbt__put_int32(stream, tag->tag_byte_array.size);
+      nbt_internal_put_int32(stream, tag->tag_byte_array.size);
       for (size_t i = 0; i < tag->tag_byte_array.size; i++) {
-        nbt__put_byte(stream, tag->tag_byte_array.value[i]);
+        nbt_internal_put_byte(stream, tag->tag_byte_array.value[i]);
       }
       break;
     }
     case NBT_TYPE_STRING: {
-      nbt__put_int16(stream, tag->tag_string.size);
+      nbt_internal_put_int16(stream, tag->tag_string.size);
       for (size_t i = 0; i < tag->tag_string.size; i++) {
-        nbt__put_byte(stream, tag->tag_string.value[i]);
+        nbt_internal_put_byte(stream, tag->tag_string.value[i]);
       }
       break;
     }
     case NBT_TYPE_LIST: {
-      nbt__put_byte(stream, tag->tag_list.type);
-      nbt__put_int32(stream, tag->tag_list.size);
+      nbt_internal_put_byte(stream, tag->tag_list.type);
+      nbt_internal_put_int32(stream, tag->tag_list.size);
       for (size_t i = 0; i < tag->tag_list.size; i++) {
-        nbt__write_tag(stream, tag->tag_list.value[i], 0, 0);
+        nbt_internal_write_tag(stream, tag->tag_list.value[i], 0, 0);
       }
       break;
     }
     case NBT_TYPE_COMPOUND: {
       for (size_t i = 0; i < tag->tag_compound.size; i++) {
-        nbt__write_tag(stream, tag->tag_compound.value[i], 1, 1);
+        nbt_internal_write_tag(stream, tag->tag_compound.value[i], 1, 1);
       }
-      nbt__put_byte(stream, 0); // End tag.
+      nbt_internal_put_byte(stream, 0); // End tag.
       break;
     }
     case NBT_TYPE_INT_ARRAY: {
-      nbt__put_int32(stream, tag->tag_int_array.size);
+      nbt_internal_put_int32(stream, tag->tag_int_array.size);
       for (size_t i = 0; i < tag->tag_int_array.size; i++) {
-        nbt__put_int32(stream, tag->tag_int_array.value[i]);
+        nbt_internal_put_int32(stream, tag->tag_int_array.value[i]);
       }
       break;
     }
     case NBT_TYPE_LONG_ARRAY: {
-      nbt__put_int32(stream, tag->tag_long_array.size);
+      nbt_internal_put_int32(stream, tag->tag_long_array.size);
       for (size_t i = 0; i < tag->tag_long_array.size; i++) {
-        nbt__put_int64(stream, tag->tag_long_array.value[i]);
+        nbt_internal_put_int64(stream, tag->tag_long_array.value[i]);
       }
       break;
     }
@@ -623,11 +623,11 @@ void nbt__write_tag(nbt__write_stream_t* stream, nbt_tag_t* tag, int write_name,
 
 }
 
-uint32_t nbt__crc_table[256];
+uint32_t nbt_internal_crc_table[256];
 
-int nbt__crc_table_computed = 0;
+int nbt_internal_crc_table_computed = 0;
 
-void nbt__make_crc_table(void) {
+void nbt_internal_make_crc_table(void) {
   unsigned long c;
   int n, k;
 
@@ -640,21 +640,21 @@ void nbt__make_crc_table(void) {
         c = c >> 1;
       }
     }
-    nbt__crc_table[n] = c;
+    nbt_internal_crc_table[n] = c;
   }
-  nbt__crc_table_computed = 1;
+  nbt_internal_crc_table_computed = 1;
 }
 
-static uint32_t nbt__update_crc(uint32_t crc, uint8_t* buf, size_t len) {
+static uint32_t nbt_internal_update_crc(uint32_t crc, uint8_t* buf, size_t len) {
   uint32_t c = crc ^ 0xffffffffL;
   size_t n;
 
-  if (!nbt__crc_table_computed) {
-    nbt__make_crc_table();
+  if (!nbt_internal_crc_table_computed) {
+    nbt_internal_make_crc_table();
   }
 
   for (n = 0; n < len; n++) {
-    c = nbt__crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
+    c = nbt_internal_crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
   }
   return c ^ 0xffffffffL;
 }
@@ -682,13 +682,13 @@ void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags) {
     }
   }
 
-  nbt__write_stream_t write_stream;
+  nbt_internal_write_stream_t write_stream;
   write_stream.buffer = (uint8_t*)NBT_MALLOC(NBT_BUFFER_SIZE);
   write_stream.offset = 0;
   write_stream.size = 0;
   write_stream.alloc_size = NBT_BUFFER_SIZE;
 
-  nbt__write_tag(&write_stream, tag, 1, 1);
+  nbt_internal_write_tag(&write_stream, tag, 1, 1);
 
   if (compressed) {
 
@@ -745,7 +745,7 @@ void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags) {
         size_t have = NBT_BUFFER_SIZE - stream.avail_out;
         writer.write(writer.userdata, out_buffer, have);
 
-        crc = nbt__update_crc(crc, out_buffer, have);
+        crc = nbt_internal_update_crc(crc, out_buffer, have);
 
       } while (stream.avail_out == 0);
 
@@ -772,7 +772,7 @@ void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags) {
 
 }
 
-static nbt_tag_t* nbt__new_tag_base(void) {
+static nbt_tag_t* nbt_internal_new_tag_base(void) {
   nbt_tag_t* tag = (nbt_tag_t*)NBT_MALLOC(sizeof(nbt_tag_t));
   tag->name = NULL;
   tag->name_size = 0;
@@ -781,7 +781,7 @@ static nbt_tag_t* nbt__new_tag_base(void) {
 }
 
 nbt_tag_t* nbt_new_tag_byte(int8_t value) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_BYTE;
   tag->tag_byte.value = value;
@@ -790,7 +790,7 @@ nbt_tag_t* nbt_new_tag_byte(int8_t value) {
 }
 
 nbt_tag_t* nbt_new_tag_short(int16_t value) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_SHORT;
   tag->tag_short.value = value;
@@ -799,7 +799,7 @@ nbt_tag_t* nbt_new_tag_short(int16_t value) {
 }
 
 nbt_tag_t* nbt_new_tag_int(int32_t value) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_INT;
   tag->tag_int.value = value;
@@ -808,7 +808,7 @@ nbt_tag_t* nbt_new_tag_int(int32_t value) {
 }
 
 nbt_tag_t* nbt_new_tag_long(int64_t value) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_LONG;
   tag->tag_long.value = value;
@@ -817,7 +817,7 @@ nbt_tag_t* nbt_new_tag_long(int64_t value) {
 }
 
 nbt_tag_t* nbt_new_tag_float(float value) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_FLOAT;
   tag->tag_float.value = value;
@@ -826,7 +826,7 @@ nbt_tag_t* nbt_new_tag_float(float value) {
 }
 
 nbt_tag_t* nbt_new_tag_double(double value) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_DOUBLE;
   tag->tag_double.value = value;
@@ -835,7 +835,7 @@ nbt_tag_t* nbt_new_tag_double(double value) {
 }
 
 nbt_tag_t* nbt_new_tag_byte_array(int8_t* value, size_t size) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_BYTE_ARRAY;
   tag->tag_byte_array.size = size;
@@ -847,7 +847,7 @@ nbt_tag_t* nbt_new_tag_byte_array(int8_t* value, size_t size) {
 }
 
 nbt_tag_t* nbt_new_tag_string(const char* value, size_t size) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_STRING;
   tag->tag_string.size = size;
@@ -860,7 +860,7 @@ nbt_tag_t* nbt_new_tag_string(const char* value, size_t size) {
 }
 
 nbt_tag_t* nbt_new_tag_list(nbt_tag_type_t type) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_LIST;
   tag->tag_list.type = type;
@@ -871,7 +871,7 @@ nbt_tag_t* nbt_new_tag_list(nbt_tag_type_t type) {
 }
 
 nbt_tag_t* nbt_new_tag_compound(void) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_COMPOUND;
   tag->tag_compound.size = 0;
@@ -881,7 +881,7 @@ nbt_tag_t* nbt_new_tag_compound(void) {
 }
 
 nbt_tag_t* nbt_new_tag_int_array(int32_t* value, size_t size) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_INT_ARRAY;
   tag->tag_int_array.size = size;
@@ -893,7 +893,7 @@ nbt_tag_t* nbt_new_tag_int_array(int32_t* value, size_t size) {
 }
 
 nbt_tag_t* nbt_new_tag_long_array(int64_t* value, size_t size) {
-  nbt_tag_t* tag = nbt__new_tag_base();
+  nbt_tag_t* tag = nbt_internal_new_tag_base();
 
   tag->type = NBT_TYPE_LONG_ARRAY;
   tag->tag_long_array.size = size;

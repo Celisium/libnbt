@@ -237,7 +237,7 @@ static nbt_tag_t* nbt_internal_parse(nbt_internal_read_stream_t* stream, int par
   nbt_tag_t* tag = (nbt_tag_t*)NBT_MALLOC(sizeof(nbt_tag_t));
 
   if (override_type == NBT_NO_OVERRIDE) {
-    tag->type = nbt_internal_get_byte(stream);
+    tag->type = (nbt_tag_type_t)nbt_internal_get_byte(stream);
   } else {
     tag->type = override_type;
   }
@@ -301,7 +301,7 @@ static nbt_tag_t* nbt_internal_parse(nbt_internal_read_stream_t* stream, int par
       break;
     }
     case NBT_TYPE_LIST: {
-      tag->tag_list.type = nbt_internal_get_byte(stream);
+      tag->tag_list.type = (nbt_tag_type_t)nbt_internal_get_byte(stream);
       tag->tag_list.size = nbt_internal_get_int32(stream);
       tag->tag_list.value = (nbt_tag_t**)NBT_MALLOC(tag->tag_list.size * sizeof(nbt_tag_t*));
       for (size_t i = 0; i < tag->tag_list.size; i++) {
@@ -915,7 +915,7 @@ void nbt_set_tag_name(nbt_tag_t* tag, const char* name, size_t size) {
 }
 
 void nbt_tag_list_append(nbt_tag_t* list, nbt_tag_t* value) {
-  list->tag_list.value = NBT_REALLOC(list->tag_list.value, (list->tag_list.size + 1) * sizeof(nbt_tag_t*)) ;
+  list->tag_list.value = (nbt_tag_t**)NBT_REALLOC(list->tag_list.value, (list->tag_list.size + 1) * sizeof(nbt_tag_t*)) ;
   list->tag_list.value[list->tag_list.size] = value;
   list->tag_list.size++;
 }
@@ -925,7 +925,7 @@ nbt_tag_t* nbt_tag_list_get(nbt_tag_t* tag, size_t index) {
 }
 
 void nbt_tag_compound_append(nbt_tag_t* compound, nbt_tag_t* value) {
-  compound->tag_compound.value = NBT_REALLOC(compound->tag_compound.value, (compound->tag_compound.size + 1) * sizeof(nbt_tag_t*));
+  compound->tag_compound.value = (nbt_tag_t**)NBT_REALLOC(compound->tag_compound.value, (compound->tag_compound.size + 1) * sizeof(nbt_tag_t*));
   compound->tag_compound.value[compound->tag_compound.size] = value;
   compound->tag_compound.size++;
 }

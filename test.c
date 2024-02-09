@@ -3,11 +3,11 @@
 #include "nbt.h"
 
 static size_t reader_read(void* userdata, uint8_t* data, size_t size) {
-  return fread(data, 1, size, userdata);
+  return fread(data, 1, size, (FILE*)userdata);
 }
 
 static size_t writer_write(void* userdata, uint8_t* data, size_t size) {
-  return fwrite(data, 1, size, userdata);
+  return fwrite(data, 1, size, (FILE*)userdata);
 }
 
 static void print_nbt_tree(nbt_tag_t* tag, int indentation) {

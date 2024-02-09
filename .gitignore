@@ -1,4 +1,3 @@
-test
-write_test_raw.nbt
-write_test_zlib.nbt
-write_test_gzip.nbt
+test/write_test_raw.nbt
+test/write_test_zlib.nbt
+test/write_test_gzip.nbt

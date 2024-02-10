@@ -17,10 +17,15 @@
 extern "C" {
 #endif
 
-#define LIBNBT_VERSION 10
+#define LIBNBT_VERSION_MAJOR 2
+#define LIBNBT_VERSION_MINOR 0
+#define LIBNBT_VERSION_PATCH 0
+
 #define LIBNBT_NBT_VERSION 19133
 
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifndef NBT_NO_STDLIB
 #include <stdlib.h>
@@ -32,16 +37,6 @@ extern "C" {
 #define NBT_MEMCMP memcmp
 #endif
 
-#ifndef NBT_NO_STDINT
-#include <stdint.h>
-#endif
-
-#ifdef NBT_OWN_ZLIB
-#include NBT_OWN_ZLIB
-#else
-#include "miniz.h"
-#endif
-
 #ifndef Z_DEFAULT_WINDOW_BITS
 #define Z_DEFAULT_WINDOW_BITS 15
 #endif
@@ -51,6 +46,19 @@ extern "C" {
 #endif
 
 #define NBT_COMPRESSION_LEVEL 9
+
+typedef enum {
+	NBT_ALLOC_HINT_STRING,
+	NBT_ALLOC_HINT_BYTE_ARRAY,
+	NBT_ALLOC_HINT_TAG
+} nbt_alloc_hint_t;
+
+typedef void*(*nbt_alloc_func_t)(void* userdata, size_t new_size, void* old_ptr, size_t old_size, nbt_alloc_hint_t hint);
+
+typedef struct {
+	void* userdata;
+	nbt_alloc_func_t func;
+} nbt_allocator_t;
 
 typedef enum {
   NBT_TYPE_END,
@@ -66,7 +74,6 @@ typedef enum {
   NBT_TYPE_COMPOUND,
   NBT_TYPE_INT_ARRAY,
   NBT_TYPE_LONG_ARRAY,
-  NBT_NO_OVERRIDE // Only used internally.
 } nbt_tag_type_t;
 
 typedef struct nbt_tag_t nbt_tag_t;
@@ -76,7 +83,7 @@ struct nbt_tag_t {
   nbt_tag_type_t type;
 
   char* name;
-  size_t name_size;
+  size_t name_length;
 
   union {
     struct {
@@ -98,28 +105,28 @@ struct nbt_tag_t {
       double value;
     } tag_double;
     struct {
-      int8_t* value;
+      int8_t* elements;
       size_t size;
     } tag_byte_array;
     struct {
       char* value;
-      size_t size;
+      size_t length;
     } tag_string;
     struct {
-      nbt_tag_t** value;
+      nbt_tag_t* elements;
       nbt_tag_type_t type;
       size_t size;
     } tag_list;
     struct {
-      nbt_tag_t** value;
+      nbt_tag_t* elements;
       size_t size;
     } tag_compound;
     struct {
-      int32_t* value;
+      int32_t* elements;
       size_t size;
     } tag_int_array;
     struct {
-      int64_t* value;
+      int64_t* elements;
       size_t size;
     } tag_long_array;
   };
@@ -127,13 +134,13 @@ struct nbt_tag_t {
 };
 
 typedef struct {
-  size_t (*read)(void* userdata, uint8_t* data, size_t size);
   void* userdata;
+  size_t (*read)(void* userdata, uint8_t* data, size_t size);
 } nbt_reader_t;
 
 typedef struct {
-  size_t (*write)(void* userdata, uint8_t* data, size_t size);
   void* userdata;
+  size_t (*write)(void* userdata, uint8_t* data, size_t size);
 } nbt_writer_t;
 
 typedef enum {
@@ -148,30 +155,36 @@ typedef enum {
   NBT_WRITE_FLAG_USE_RAW = 3
 } nbt_write_flags_t;
 
-nbt_tag_t* nbt_parse(nbt_reader_t reader, int parse_flags);
-void nbt_write(nbt_writer_t writer, nbt_tag_t* tag, int write_flags);
+typedef enum {
+	NBT_SUCCESS,
+	NBT_ALLOCATION_FAILURE,
+	NBT_INVALID_TAG_TYPE
+} nbt_result_t;
 
-nbt_tag_t* nbt_new_tag_byte(int8_t value);
-nbt_tag_t* nbt_new_tag_short(int16_t value);
-nbt_tag_t* nbt_new_tag_int(int32_t value);
-nbt_tag_t* nbt_new_tag_long(int64_t value);
-nbt_tag_t* nbt_new_tag_float(float value);
-nbt_tag_t* nbt_new_tag_double(double value);
-nbt_tag_t* nbt_new_tag_byte_array(int8_t* value, size_t size);
-nbt_tag_t* nbt_new_tag_string(const char* value, size_t size);
-nbt_tag_t* nbt_new_tag_list(nbt_tag_type_t type);
-nbt_tag_t* nbt_new_tag_compound(void);
-nbt_tag_t* nbt_new_tag_int_array(int32_t* value, size_t size);
-nbt_tag_t* nbt_new_tag_long_array(int64_t* value, size_t size);
+nbt_result_t nbt_parse(nbt_reader_t reader, int parse_flags, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_write(nbt_writer_t writer, int write_flags, nbt_tag_t* in_tag);
 
-void nbt_set_tag_name(nbt_tag_t* tag, const char* name, size_t size);
+nbt_result_t nbt_new_byte(int8_t value, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_short(int16_t value, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_int(int32_t value, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_long(int64_t value, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_float(float value, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_double(double value, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_byte_array(int8_t* init_elements, size_t size, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_string(const char* init_value, size_t length, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_list(nbt_tag_type_t type, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_compound(nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_int_array(int32_t* init_elements, size_t size, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
+nbt_result_t nbt_new_long_array(int64_t* init_elements, size_t size, nbt_tag_t* out_tag, nbt_allocator_t* alloc);
 
-void nbt_tag_list_append(nbt_tag_t* list, nbt_tag_t* value);
-nbt_tag_t* nbt_tag_list_get(nbt_tag_t* tag, size_t index);
-void nbt_tag_compound_append(nbt_tag_t* compound, nbt_tag_t* value);
-nbt_tag_t* nbt_tag_compound_get(nbt_tag_t* tag, const char* key);
+nbt_result_t nbt_set_tag_name(nbt_tag_t* tag, const char* name, size_t length, nbt_allocator_t* alloc);
 
-void nbt_free_tag(nbt_tag_t* tag);
+nbt_result_t nbt_list_append(nbt_tag_t* list, nbt_tag_t* tag, nbt_allocator_t* alloc);
+nbt_tag_t* nbt_list_get(nbt_tag_t* list, size_t index);
+nbt_result_t nbt_compound_append(nbt_tag_t* compound, nbt_tag_t* value, nbt_allocator_t* alloc);
+nbt_tag_t* nbt_compound_get(nbt_tag_t* compound, const char* key);
+
+void nbt_free(nbt_tag_t* tag);
 
 #ifdef __cplusplus
 }
@@ -179,7 +192,35 @@ void nbt_free_tag(nbt_tag_t* tag);
 
 #endif
 
+#define NBT_IMPLEMENTATION
 #ifdef NBT_IMPLEMENTATION
+
+#define NBT_NO_OVERRIDE ((nbt_tag_type_t)-1)
+
+static void* nbt_internal_default_allocator_func(void* userdata, size_t new_size, void* old_ptr, size_t old_size, nbt_alloc_hint_t hint) {
+	(void)userdata;
+	(void)hint;
+	(void)old_size;
+
+	if (new_size == 0) {
+		free(old_ptr);
+		return NULL;
+	}
+
+	if (old_ptr == NULL) {
+		return malloc(new_size);
+	}
+
+	return realloc(userdata, new_size);
+}
+
+static nbt_allocator_t* nbt_internal_get_default_allocator(void) {
+	static nbt_allocator_t default_allocator = {
+		NULL,
+		nbt_internal_default_allocator_func
+	};
+	return &default_allocator;
+}
 
 typedef struct {
   uint8_t* buffer;
@@ -187,9 +228,7 @@ typedef struct {
 } nbt_internal_read_stream_t;
 
 static uint8_t nbt_internal_get_byte(nbt_internal_read_stream_t* stream) {
-
   return stream->buffer[stream->buffer_offset++];
-
 }
 
 static int16_t nbt_internal_get_int16(nbt_internal_read_stream_t* stream) {
@@ -232,78 +271,111 @@ static double nbt_internal_get_double(nbt_internal_read_stream_t* stream) {
   return *(double*)(bytes);
 }
 
-static nbt_tag_t* nbt_internal_parse(nbt_internal_read_stream_t* stream, int parse_name, nbt_tag_type_t override_type) {
-
-  nbt_tag_t* tag = (nbt_tag_t*)NBT_MALLOC(sizeof(nbt_tag_t));
+static nbt_result_t nbt_internal_parse(
+	nbt_internal_read_stream_t* stream,
+	bool parse_name,
+	nbt_tag_type_t override_type,
+	nbt_tag_t* out_tag,
+	nbt_allocator_t* alloc
+) {
+	if (!alloc) {
+		alloc = nbt_internal_get_default_allocator();
+		if (!alloc) {
+			return NBT_ALLOCATION_FAILURE;
+		}
+	}
 
   if (override_type == NBT_NO_OVERRIDE) {
-    tag->type = (nbt_tag_type_t)nbt_internal_get_byte(stream);
+    out_tag->type = (nbt_tag_type_t)nbt_internal_get_byte(stream);
   } else {
-    tag->type = override_type;
+    out_tag->type = override_type;
   }
 
-  if (parse_name && tag->type != NBT_TYPE_END) {
-    tag->name_size = nbt_internal_get_int16(stream);
-    tag->name = (char*)NBT_MALLOC(tag->name_size + 1);
-    for (size_t i = 0; i < tag->name_size; i++) {
-      tag->name[i] = nbt_internal_get_byte(stream);
+  if (parse_name && out_tag->type != NBT_TYPE_END) {
+    out_tag->name_length = nbt_internal_get_int16(stream);
+    out_tag->name = (char*)alloc->func(alloc->userdata, out_tag->name_length + 1, NULL, 0, NBT_ALLOC_HINT_STRING);
+
+		if (!out_tag->name) {
+			return NBT_ALLOCATION_FAILURE;
+		}
+    
+    for (size_t i = 0; i < out_tag->name_length; i++) {
+      out_tag->name[i] = nbt_internal_get_byte(stream);
     }
-    tag->name[tag->name_size] = '\0';
+    out_tag->name[out_tag->name_length] = '\0';
+    
   } else {
-    tag->name = NULL;
-    tag->name_size = 0;
+    out_tag->name = NULL;
+    out_tag->name_length = 0;
   }
 
-  switch (tag->type) {
+  switch (out_tag->type) {
     case NBT_TYPE_END: {
       // Don't do anything.
       break;
     }
     case NBT_TYPE_BYTE: {
-      tag->tag_byte.value = nbt_internal_get_byte(stream);
+      out_tag->tag_byte.value = nbt_internal_get_byte(stream);
       break;
     }
     case NBT_TYPE_SHORT: {
-      tag->tag_short.value = nbt_internal_get_int16(stream);
+      out_tag->tag_short.value = nbt_internal_get_int16(stream);
       break;
     }
     case NBT_TYPE_INT: {
-      tag->tag_int.value = nbt_internal_get_int32(stream);
+      out_tag->tag_int.value = nbt_internal_get_int32(stream);
       break;
     }
     case NBT_TYPE_LONG: {
-      tag->tag_long.value = nbt_internal_get_int64(stream);
+      out_tag->tag_long.value = nbt_internal_get_int64(stream);
       break;
     }
     case NBT_TYPE_FLOAT: {
-      tag->tag_float.value = nbt_internal_get_float(stream);
+      out_tag->tag_float.value = nbt_internal_get_float(stream);
       break;
     }
     case NBT_TYPE_DOUBLE: {
-      tag->tag_double.value = nbt_internal_get_double(stream);
+      out_tag->tag_double.value = nbt_internal_get_double(stream);
       break;
     }
     case NBT_TYPE_BYTE_ARRAY: {
-      tag->tag_byte_array.size = nbt_internal_get_int32(stream);
-      tag->tag_byte_array.value = (int8_t*)NBT_MALLOC(tag->tag_byte_array.size);
-      for (size_t i = 0; i < tag->tag_byte_array.size; i++) {
-        tag->tag_byte_array.value[i] = nbt_internal_get_byte(stream);
+      out_tag->tag_byte_array.size = nbt_internal_get_int32(stream);
+      out_tag->tag_byte_array.elements = (int8_t*)alloc->func(
+      	alloc->userdata,
+      	out_tag->tag_byte_array.size,
+      	NULL, 0,
+      	NBT_ALLOC_HINT_BYTE_ARRAY
+      );
+
+      if (!out_tag->tag_byte_array.elements) {
+				alloc->func(alloc->userdata, 0, out_tag->name, out_tag->name_length + 1, NBT_ALLOC_HINT_STRING);
+				return NBT_ALLOCATION_FAILURE;
+			}
+      
+      for (size_t i = 0; i < out_tag->tag_byte_array.size; i++) {
+        out_tag->tag_byte_array.elements[i] = nbt_internal_get_byte(stream);
       }
       break;
     }
     case NBT_TYPE_STRING: {
-      tag->tag_string.size = nbt_internal_get_int16(stream);
-      tag->tag_string.value = (char*)NBT_MALLOC(tag->tag_string.size + 1);
-      for (size_t i = 0; i < tag->tag_string.size; i++) {
-        tag->tag_string.value[i] = nbt_internal_get_byte(stream);
+      out_tag->tag_string.length = nbt_internal_get_int16(stream);
+      out_tag->tag_string.value = (char*)alloc->func(alloc->userdata, out_tag->tag_string.length + 1, NULL, 0, NBT_ALLOC_HINT_BYTE_ARRAY);
+
+      if (!out_tag->tag_string.value) {
+				alloc->func(alloc->userdata, 0, out_tag->name, out_tag->name_length + 1, NBT_ALLOC_HINT_STRING);
+				return NBT_ALLOCATION_FAILURE;
+			}
+      
+      for (size_t i = 0; i < out_tag->tag_string.length + 1; i++) {
+        out_tag->tag_string.value[i] = nbt_internal_get_byte(stream);
       }
-      tag->tag_string.value[tag->tag_string.size] = '\0';
+      out_tag->tag_string.value[out_tag->tag_string.length] = '\0';
       break;
     }
     case NBT_TYPE_LIST: {
-      tag->tag_list.type = (nbt_tag_type_t)nbt_internal_get_byte(stream);
-      tag->tag_list.size = nbt_internal_get_int32(stream);
-      tag->tag_list.value = (nbt_tag_t**)NBT_MALLOC(tag->tag_list.size * sizeof(nbt_tag_t*));
+      out_tag->tag_list.type = (nbt_tag_type_t)nbt_internal_get_byte(stream);
+      out_tag->tag_list.size = nbt_internal_get_int32(stream);
+      out_tag->tag_list.elements = (nbt_tag_t*)NBT_MALLOC(tag->tag_list.size * sizeof(nbt_tag_t));
       for (size_t i = 0; i < tag->tag_list.size; i++) {
         tag->tag_list.value[i] = nbt_internal_parse(stream, 0, tag->tag_list.type);
       }
